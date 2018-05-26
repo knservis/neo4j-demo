@@ -1,4 +1,3 @@
-import pytest
 from shortest_path_app.db import get_db
 
 def test_get_close_db(app):

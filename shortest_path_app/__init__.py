@@ -18,10 +18,9 @@ def create_app(test_config=None):
     '''
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
-        SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'))
+        SECRET_KEY='dev')
     if test_config is None:
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_pyfile('config.py', silent=False)
     else:
         app.config.from_mapping(test_config)
 
@@ -32,7 +31,7 @@ def create_app(test_config=None):
 
     @app.route('/')
     def index():
-        return 'Rest Shortest path demo app'
+        return 'REST Shortest path demo app'
 
     @app.route(
         '/shortest_path/<string:label_a>/<int:node_id_a>/<string:label_b>/<int:node_id_b>'

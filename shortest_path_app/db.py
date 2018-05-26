@@ -6,11 +6,6 @@ def get_db():
         g.db = Neo4jClient(current_app.config['DATABASE'])
     return g.db
 
-def close_db(e=None):
-    pass
-    # db = g.pop('db', None)
-    # db = None # ??
-
 class Neo4jClient(object):
     """ Client to neo4j database """
 
@@ -37,11 +32,12 @@ class Neo4jClient(object):
         """
 
         errors = [
-            '{s} label not in the graph!'.format(l)
+            '{label} label not in the graph!'.format(label=l)
             for l in [label_a, label_b] if not l in self.graph.node_labels
         ]
         if errors:
-            raise "\n".join(errors)
+            raise ValueError("\n".join(errors))
+
         query = """MATCH (a:{label_a}{{node_id: \"{node_id_a}\"}}),
             (b:{label_b}{{node_id: \"{node_id_b}\"}}),
             p = shortestPath((a)-[*]-(b)) RETURN p""".format(
