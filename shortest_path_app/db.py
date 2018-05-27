@@ -14,9 +14,6 @@ class Neo4jClient(object):
     def __init__(self, uri):
         self.graph = Graph(uri)
 
-    def execute(self, query):
-      self.graph.run(query)
-
     def get_shortest_path_relationship(self, label_a, node_id_a, label_b,
                                        node_id_b):
         """Returns the first shortest path between two nodes identified by label and node_id 

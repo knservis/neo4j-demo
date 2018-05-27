@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, Response
+from flask import Flask, Response, g
 from shortest_path_app.db import get_db
 
 def create_app(test_config=None):
@@ -12,13 +12,11 @@ def create_app(test_config=None):
 
     Some basic TODOs (In case this is used as an example to a real application):
     - Request parameter sanitise/escape for cql.
-    - Static assets.
+    - Static assets for error and index pages.
     - Decouple request from response, using a queue and redirecting to result and/or using flash().
     - Use a proper key.
     '''
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        SECRET_KEY='dev')
     if test_config is None:
         app.config.from_pyfile('config.py', silent=False)
     else:
@@ -29,6 +27,10 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    @app.before_request
+    def before_request():
+      get_db()
+
     @app.route('/')
     def index():
         return 'REST Shortest path demo app'
@@ -37,7 +39,7 @@ def create_app(test_config=None):
         '/shortest_path/<string:label_a>/<int:node_id_a>/<string:label_b>/<int:node_id_b>'
     )
     def shortest_path(label_a, node_id_a, label_b, node_id_b):
-        db = get_db()
+        db = g.db
         ret = json.dumps(db.get_shortest_path_relationship(label_a, node_id_a, label_b, node_id_b))
         resp = Response(response=ret,
                     status=200,

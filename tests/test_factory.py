@@ -1,4 +1,6 @@
 import pytest
+import json
+from mock import patch, MagicMock, PropertyMock, DEFAULT
 from shortest_path_app import create_app
 
 def test_config():
@@ -7,19 +9,42 @@ def test_config():
     assert create_app({'TESTING': True, 'DATABASE': db_url}).testing
 
 def test_index(client):
-    response = client.get('/')
-    assert response.data == b'REST Shortest path demo app'
+    with patch('shortest_path_app.db.Graph') as db_patch:
+        db_patch.return_value = None
+        response = client.get('/')
+        assert response.data == b'REST Shortest path demo app'
 
 def test_shortest_path(client):
-    expected_response = '''[{"valid_until": "Malta corporate registry data is current through 2016", "status": "", "closed_date": "", "ibcRUC": "C 39144", "name": "SKILL GAMES NETWORK LIMITED", "countries": "", "sourceID": "Paradise Papers - Malta corporate registry", "jurisdiction": "MLT", "company_type": "", "note": "", "node_id": "59032891", "address": "", "jurisdiction_description": "Malta", "incorporation_date": "Jul 14, 2006", "country_codes": "", "type": "", "service_provider": ""}, {}, {"valid_until": "Malta corporate registry data is current through 2016", "status": "", "closed_date": "", "ibcRUC": "", "name": "SG HOLDINGS LIMITED", "countries": "", "sourceID": "Paradise Papers - Malta corporate registry", "jurisdiction": "", "company_type": "", "note": "", "node_id": "59155606", "address": "", "jurisdiction_description": "", "incorporation_date": "", "country_codes": "", "type": "", "service_provider": ""}, {}, {"valid_until": "Malta corporate registry data is current through 2016", "status": "", "closed_date": "", "ibcRUC": "C 35527", "name": "SKILL GAMES LIMITED", "countries": "", "sourceID": "Paradise Papers - Malta corporate registry", "jurisdiction": "MLT", "company_type": "", "note": "", "node_id": "59029312", "address": "", "jurisdiction_description": "Malta", "incorporation_date": "Jan 25, 2005", "country_codes": "", "type": "", "service_provider": ""}]'''
-    response = client.get('/shortest_path/Entity/59032891/Entity/59029312')
-    assert response.data == expected_response
+    expected_response = [
+        {"valid_until": "Malta corporate registry data is current through 2016", "status": ""},
+        {"valid_until": "Malta corporate registry data is current through 2017", "status": ""}
+      ]
+    expected_response_json = json.dumps(expected_response)
+    with patch.multiple('shortest_path_app.db', Graph=DEFAULT, walk=DEFAULT) as db_patch:
+        mock_db = MagicMock()
+        mock_db.node_labels = ['Entity']
+        mock_db.evaluate.return_value = expected_response
+        db_patch['Graph'].return_value = mock_db
+        db_patch['walk'].side_effect = _walk
+        response = client.get('/shortest_path/Entity/59032891/Entity/59029312')
+        assert response.data == expected_response_json
 
 def test_shortest_path_invalid_label(client):
-    with pytest.raises(ValueError) as e:
-        _ = client.get('/shortest_path/Jim/59032891/Entity/59029312')
-    assert 'Jim label not in the graph!' in e.value
+    with patch('shortest_path_app.db.Graph') as db_patch:
+        mock_db = MagicMock()
+        mock_db.node_labels = ['Entity']
+        db_patch.return_value = mock_db
+        patch.return_value = None
+        with pytest.raises(ValueError) as e:
+            _ = client.get('/shortest_path/Jim/59032891/Entity/59029312')
+        assert 'Jim label not in the graph!' in e.value
 
-def test_shortest_path_invalid_label(client):
-    response = client.get('/shortest_path/Entity/Entity/Entity/59029312')
-    assert response.status == '404 NOT FOUND'
+def test_shortest_path_invalid_node_id(client):
+    with patch('shortest_path_app.db.Graph') as db_patch:
+        db_patch.return_value = None
+        response = client.get('/shortest_path/Entity/Entity/Entity/59029312')
+        assert response.status == '404 NOT FOUND'
+
+def _walk(x):
+    for i in x:
+        yield  i
