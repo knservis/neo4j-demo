@@ -1,5 +1,6 @@
+import StringIO
 from flask import current_app, g
-from py2neo import Graph, walk
+from py2neo import Graph, Path, Relationship, walk, CypherWriter, cypher_escape
 
 def get_db():
     if 'db' not in g:
@@ -38,9 +39,25 @@ class Neo4jClient(object):
         query = """MATCH (a:{label_a}{{node_id: \"{node_id_a}\"}}),
             (b:{label_b}{{node_id: \"{node_id_b}\"}}),
             p = shortestPath((a)-[*]-(b)) RETURN p""".format(
-            label_a=label_a,
-            label_b=label_b,
+            label_a=cypher_escape(label_a),
+            label_b=cypher_escape(label_b),
             node_id_a=node_id_a,
             node_id_b=node_id_b)
         result = self.graph.evaluate(query)
-        return [i for i in walk(result)] if result else []
+        return {
+          'path': [write_relationship(i) for i in result.relationships()],
+          'path_abbrev': ["{i}".format(i=i) for i in result.relationships()],
+          'nodes': [{'id': i.__name__, 'node': i} for i in result.nodes()]
+          } if result else {}
+
+
+def write_relationship(relationship):
+    result = StringIO.StringIO()
+    writer = CypherWriter(result)
+    writer.write_node(relationship.start_node(), full=True)
+    writer.file.write(u"-")
+    writer.write_relationship_detail(relationship, None)
+    writer.file.write(u"->")
+    writer.write_node(relationship.end_node(), full=True)
+    result.flush()
+    return result.getvalue()
