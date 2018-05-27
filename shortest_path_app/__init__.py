@@ -1,6 +1,5 @@
 import os
-import json
-from flask import Flask, Response, g
+from flask import Flask, Response, g, jsonify
 from shortest_path_app.db import get_db
 
 def create_app(test_config=None):
@@ -29,7 +28,7 @@ def create_app(test_config=None):
 
     @app.before_request
     def before_request():
-      get_db()
+        get_db()
 
     @app.route('/')
     def index():
@@ -40,10 +39,8 @@ def create_app(test_config=None):
     )
     def shortest_path(label_a, node_id_a, label_b, node_id_b):
         db = g.db
-        ret = json.dumps(db.get_shortest_path_relationship(label_a, node_id_a, label_b, node_id_b))
-        resp = Response(response=ret,
-                    status=200,
-                    mimetype='application/json')
-        return resp
+        return jsonify(
+            db.get_shortest_path_relationship(label_a, node_id_a, label_b,
+                                              node_id_b))
 
     return app
