@@ -44,6 +44,28 @@ export FLASK_ENV=development
 flask run
 ```
 
+### Querying the server
+
+Since there is only one endpoint in this demo, querying the server for the shortest path between to nodes is as simple as:
+
+```bash
+curl -D - http://127.0.0.1:5000/shortest_path/Entity/59032891/Entity/59029312
+```
+
+where 'Entity' is the node type and '59032891' and '59029312' are the node ids.
+
+The query will return a JSON doc with three sections:
+
+* Nodes ('nodes')
+* Path ('path')
+* Path abbreviated ('path_abbrev')
+
+The Path and Path abbreviated contain a list of the edges of the first shortest path from node '59032891' to node '59029312'.
+
+The difference between the two is that the 'abbreviated' version is easier read, but contains only edge information.
+
+The Nodes list simply contains the nodes along the shortest path.
+
 ### Putting it all together
 
 The easiest way to try out the whole project is to run it in docker with (from the project directory):
